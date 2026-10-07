@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -31,6 +31,13 @@ def home():
 def listar_clientes(db: Session = Depends(get_db)):
     return db.query(Cliente).all()
 
+@app.get("/clientes/{cliente_id}", response_model=ClienteResponse)
+def buscarid_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente.id).first()
+
+    if Cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    return cliente
 
 @app.post("/clientes", response_model=ClienteResponse)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
