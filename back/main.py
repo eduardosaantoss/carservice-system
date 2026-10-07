@@ -21,6 +21,14 @@ class ClienteResponse(ClienteCreate):
 
     model_config = ConfigDict(from_attributes=True)
 
+def erro404(cliente_id: int, db: Session) -> Cliente:
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
+    return cliente
+
 
 @app.get("/")
 def home():
@@ -34,11 +42,7 @@ def listar_clientes(db: Session = Depends(get_db)):
 @app.get("/clientes/{cliente_id}", response_model=ClienteResponse)
 def buscar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-
-    if cliente is None:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-
-    return cliente
+    return erro404(cliente_id, db)
 
 @app.post("/clientes", response_model=ClienteResponse)
 def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
@@ -55,9 +59,7 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
 @app.put("/clientes/{cliente_id}", response_model=ClienteResponse)
 def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-
-    if cliente is None:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    cliente = erro404(cliente_id, db)
 
     cliente.nome = dados.nome
     cliente.telefone = dados.telefone
@@ -70,10 +72,9 @@ def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depen
 @app.delete("/clientes/{cliente_id}")
 def deletar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-
-    if cliente is None:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+    cliente = erro404(cliente_id, db)
 
     db.delete(cliente)
     db.commit()
     return {"mensagem": "Cliente deletado com sucesso"}
+
