@@ -32,11 +32,12 @@ def listar_clientes(db: Session = Depends(get_db)):
     return db.query(Cliente).all()
 
 @app.get("/clientes/{cliente_id}", response_model=ClienteResponse)
-def buscarid_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.id == cliente.id).first()
+def buscar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
-    if Cliente is None:
+    if cliente is None:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
     return cliente
 
 @app.post("/clientes", response_model=ClienteResponse)
@@ -50,3 +51,29 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(novo_cliente)
     return novo_cliente
+
+@app.put("/clientes/{cliente_id}", response_model=ClienteResponse)
+def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
+    cliente.nome = dados.nome
+    cliente.telefone = dados.telefone
+    cliente.email = dados.email
+
+    db.commit()
+    db.refresh(cliente)
+    return cliente
+
+@app.delete("/clientes/{cliente_id}")
+def deletar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
+
+    db.delete(cliente)
+    db.commit()
+    return {"mensagem": "Cliente deletado com sucesso"}
