@@ -15,3 +15,10 @@ Base = declarative_base()
 
 with engine.connect() as connection:
     print("Banco de dados on!")
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
