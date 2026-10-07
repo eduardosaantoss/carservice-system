@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database.database import Base, engine, get_db
@@ -52,9 +53,13 @@ def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
         email=cliente.email,
     )
     db.add(novo_cliente)
-    db.commit()
-    db.refresh(novo_cliente)
-    return novo_cliente
+    try:
+        db.commit()
+        db.refresh(novo_cliente)
+        return novo_cliente
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email já cadastrado!")
 
 @app.put("/clientes/{cliente_id}", response_model=ClienteResponse)
 def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
@@ -65,9 +70,13 @@ def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depen
     cliente.telefone = dados.telefone
     cliente.email = dados.email
 
-    db.commit()
-    db.refresh(cliente)
-    return cliente
+    try:
+        db.commit()
+        db.refresh(cliente)
+        return cliente
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email já cadastrado!")
 
 @app.delete("/clientes/{cliente_id}")
 def deletar_cliente(cliente_id: int, db: Session = Depends(get_db)):
