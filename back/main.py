@@ -1,7 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from database.database import Base, engine
+from models.cliente import Cliente
+
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 class Cliente(BaseModel):
     nome : str
