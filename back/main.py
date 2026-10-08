@@ -5,22 +5,11 @@ from sqlalchemy.orm import Session
 
 from database.database import Base, engine, get_db
 from models.cliente import Cliente
+from schemas.cliente import ClienteCreate, ClienteResponse
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
-
-
-class ClienteCreate(BaseModel):
-    nome: str
-    telefone: str
-    email: str
-
-
-class ClienteResponse(ClienteCreate):
-    id: int
-
-    model_config = ConfigDict(from_attributes=True)
 
 def erro404(cliente_id: int, db: Session) -> Cliente:
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
