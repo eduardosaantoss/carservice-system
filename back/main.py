@@ -1,78 +1,13 @@
 from fastapi import Depends, FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+
 
 from database.database import Base, engine, get_db
 from models.cliente import Cliente
-from schemas.cliente import ClienteCreate, ClienteResponse
+from routers.cliente import router as clientes_router
 
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-def erro404(cliente_id: int, db: Session) -> Cliente:
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-
-    if cliente is None:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado")
-
-    return cliente
-
-
-@app.get("/")
-def home():
-    return {"message": "AutoCare API funcionando!"}
-
-
-@app.get("/clientes", response_model=list[ClienteResponse])
-def listar_clientes(db: Session = Depends(get_db)):
-    return db.query(Cliente).all()
-
-@app.get("/clientes/{cliente_id}", response_model=ClienteResponse)
-def buscar_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-    return erro404(cliente_id, db)
-
-@app.post("/clientes", response_model=ClienteResponse)
-def criar_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
-    novo_cliente = Cliente(
-        nome=cliente.nome,
-        telefone=cliente.telefone,
-        email=cliente.email,
-    )
-    db.add(novo_cliente)
-    try:
-        db.commit()
-        db.refresh(novo_cliente)
-        return novo_cliente
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Email já cadastrado!")
-
-@app.put("/clientes/{cliente_id}", response_model=ClienteResponse)
-def atualizar_cliente(cliente_id: int, dados: ClienteCreate, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-    cliente = erro404(cliente_id, db)
-
-    cliente.nome = dados.nome
-    cliente.telefone = dados.telefone
-    cliente.email = dados.email
-
-    try:
-        db.commit()
-        db.refresh(cliente)
-        return cliente
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Email já cadastrado!")
-
-@app.delete("/clientes/{cliente_id}")
-def deletar_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
-    cliente = erro404(cliente_id, db)
-
-    db.delete(cliente)
-    db.commit()
-    return {"mensagem": "Cliente deletado com sucesso"}
+app.include_router(clientes_router)
 
